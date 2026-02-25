@@ -751,7 +751,7 @@ export default function App() {
 
   const rmSpot = id => setSelSpots(p => p.filter(s => s.id !== id));
 
-  // ── Fetch spots via Claude AI ──
+  // ── Fetch spots via AI ──
   useEffect(() => {
     if (!dest) return;
     const key = `${dest.name}__${dest.state}`;
@@ -786,7 +786,7 @@ export default function App() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
+            model: "gemini-sonnet-4-20250514",
             max_tokens: 1200,
             messages: [{ role: "user", content:
               `List the 14 best tourist attractions in ${dest.name}, ${dest.state}, India.
@@ -1048,7 +1048,7 @@ Schema per item: { "id":"ai_N", "name":"string", "rating":1-5, "type":"Heritage|
                   <div className="spinner" />
                   <div>
                     <div className="spinner-title">Fetching spots for {dest?.name}...</div>
-                    <div className="spinner-sub">🤖 Claude AI is sourcing real places <div className="dots"><span/><span/><span/></div></div>
+                    <div className="spinner-sub">🤖 Gemini AI is sourcing real places <div className="dots"><span/><span/><span/></div></div>
                   </div>
                 </div>
               ) : (

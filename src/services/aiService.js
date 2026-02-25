@@ -1,6 +1,9 @@
 // AI Service for fetching cities, spots, and handling chat
 // Uses free AI providers for dynamic data
 
+import { CITIES_DATA } from '../data/cities'
+import { SPOTS_DATA } from '../data/spots'
+
 const AI_CONFIG = {
   provider: 'ollama', // Options: 'ollama', 'deepseek', 'lmstudio'
   baseUrl: 'http://localhost:11434',
@@ -8,39 +11,11 @@ const AI_CONFIG = {
   timeout: 30000,
 }
 
-// Fallback data in case AI is unavailable
-const FALLBACK_CITIES = [
-  { name: 'Mumbai', state: 'Maharashtra', tier: 1, lat: 19.076, lng: 72.877 },
-  { name: 'Delhi', state: 'Delhi', tier: 1, lat: 28.704, lng: 77.102 },
-  { name: 'Bengaluru', state: 'Karnataka', tier: 1, lat: 12.971, lng: 77.594 },
-  { name: 'Chennai', state: 'Tamil Nadu', tier: 1, lat: 13.083, lng: 80.27 },
-  { name: 'Kolkata', state: 'West Bengal', tier: 1, lat: 22.572, lng: 88.363 },
-  { name: 'Hyderabad', state: 'Telangana', tier: 1, lat: 17.385, lng: 78.487 },
-  { name: 'Pune', state: 'Maharashtra', tier: 1, lat: 18.52, lng: 73.856 },
-  { name: 'Jaipur', state: 'Rajasthan', tier: 1, lat: 26.912, lng: 75.787 },
-  { name: 'Goa', state: 'Goa', tier: 1, lat: 15.299, lng: 74.124 },
-  { name: 'Kochi', state: 'Kerala', tier: 1, lat: 9.931, lng: 76.267 },
-  { name: 'Varanasi', state: 'Uttar Pradesh', tier: 2, lat: 25.317, lng: 83.013 },
-  { name: 'Agra', state: 'Uttar Pradesh', tier: 2, lat: 27.176, lng: 78.008 },
-  { name: 'Shimla', state: 'Himachal Pradesh', tier: 2, lat: 31.104, lng: 77.167 },
-  { name: 'Manali', state: 'Himachal Pradesh', tier: 2, lat: 32.239, lng: 77.189 },
-  { name: 'Leh', state: 'Ladakh', tier: 2, lat: 34.166, lng: 77.584 },
-  { name: 'Srinagar', state: 'Jammu & Kashmir', tier: 2, lat: 34.083, lng: 74.797 },
-  { name: 'Udaipur', state: 'Rajasthan', tier: 2, lat: 24.585, lng: 73.712 },
-  { name: 'Jodhpur', state: 'Rajasthan', tier: 2, lat: 26.292, lng: 73.017 },
-  { name: 'Mysuru', state: 'Karnataka', tier: 2, lat: 12.296, lng: 76.639 },
-  { name: 'Amritsar', state: 'Punjab', tier: 2, lat: 31.634, lng: 74.872 },
-]
+// Use comprehensive cities data (100+ cities) as fallback
+const FALLBACK_CITIES = CITIES_DATA
 
-const FALLBACK_SPOTS = [
-  { id: 'd1', name: 'City Heritage Fort / Palace', rating: 4, type: 'Heritage', distance: 8, visitTime: 2, withinCity: true },
-  { id: 'd2', name: 'Main Temple / Shrine', rating: 5, type: 'Spiritual', distance: 5, visitTime: 2, withinCity: true },
-  { id: 'd3', name: 'Local Bazaar / Market', rating: 4, type: 'Shopping', distance: 3, visitTime: 2, withinCity: true },
-  { id: 'd4', name: 'Botanical Garden / Park', rating: 3, type: 'Nature', distance: 4, visitTime: 2, withinCity: true },
-  { id: 'd5', name: 'Scenic Viewpoint', rating: 4, type: 'Scenic', distance: 10, visitTime: 2, withinCity: true },
-  { id: 'd6', name: 'Local Food Street', rating: 4, type: 'Food', distance: 2, visitTime: 2, withinCity: true },
-  { id: 'd7', name: 'Museum / Cultural Centre', rating: 4, type: 'Culture', distance: 5, visitTime: 2, withinCity: true },
-]
+// Generic fallback spots - used when AI is unavailable
+const FALLBACK_SPOTS = SPOTS_DATA
 
 // Check if AI service is available
 async function checkAIAvailability() {
@@ -143,14 +118,22 @@ No markdown, no explanations, just the JSON array.`
 // Fetch tourist spots from AI
 export async function fetchSpotsFromAI(destination) {
   if (!destination || !destination.name) {
-    return FALLBACK_SPOTS
+    // Return generic fallback spots
+    return FALLBACK_SPOTS['Mumbai'] || getGenericSpots()
+  }
+
+  // Check if we have curated spots for this city
+  const citySpots = SPOTS_DATA[destination.name]
+  if (citySpots) {
+    return citySpots
   }
 
   const isAvailable = await checkAIAvailability()
   
   if (!isAvailable) {
     console.log('AI not available, using fallback spots')
-    return FALLBACK_SPOTS
+    // Try to get similar city spots or generic spots
+    return citySpots || getGenericSpots()
   }
 
   const systemPrompt = `You are a knowledgeable travel expert for India. Respond ONLY with valid JSON array.`
@@ -168,11 +151,24 @@ No markdown, no explanations, just the JSON array.`
       return spots
     }
     
-    return FALLBACK_SPOTS
+    return citySpots || getGenericSpots()
   } catch (error) {
     console.error('Error fetching spots from AI:', error)
-    return FALLBACK_SPOTS
+    return citySpots || getGenericSpots()
   }
+}
+
+// Get generic fallback spots
+function getGenericSpots() {
+  return [
+    { id: 'd1', name: 'City Heritage Fort / Palace', rating: 4, type: 'Heritage', distance: 8, visitTime: 2, withinCity: true },
+    { id: 'd2', name: 'Main Temple / Shrine', rating: 5, type: 'Spiritual', distance: 5, visitTime: 2, withinCity: true },
+    { id: 'd3', name: 'Local Bazaar / Market', rating: 4, type: 'Shopping', distance: 3, visitTime: 2, withinCity: true },
+    { id: 'd4', name: 'Botanical Garden / Park', rating: 3, type: 'Nature', distance: 4, visitTime: 2, withinCity: true },
+    { id: 'd5', name: 'Scenic Viewpoint', rating: 4, type: 'Scenic', distance: 10, visitTime: 2, withinCity: true },
+    { id: 'd6', name: 'Local Food Street', rating: 4, type: 'Food', distance: 2, visitTime: 2, withinCity: true },
+    { id: 'd7', name: 'Museum / Cultural Centre', rating: 4, type: 'Culture', distance: 5, visitTime: 2, withinCity: true },
+  ]
 }
 
 // Send chat message to AI
